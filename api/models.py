@@ -97,3 +97,16 @@ class Flight(models.Model):
     
     def __str__(self):
         return f"{self.trip.name} - {self.flight_number} on {self.flight_date}"
+
+class SuggestedEvent(models.Model):
+    """Cache for AI-generated event suggestions by destination"""
+    destination = models.CharField(max_length=200, unique=True, db_index=True)
+    events_data = models.JSONField()  # Store the full events array
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        return f"Suggestions for {self.destination}"

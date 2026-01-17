@@ -5,7 +5,13 @@ A full-stack travel planning application built with Django REST Framework and Re
 ## Features
 
 - Create and manage trips with destinations, dates, and budgets
+- **AI-powered event suggestions** using Claude (Anthropic)
+- Day-by-day itinerary planning with drag-and-drop
+- Expense tracking with budget overview
+- Drag-to-reorder activities within days
+- Drag-to-delete functionality
 - Automatic trip categorization (Upcoming, Current, Past)
+- Smart fallback suggestions (works without API key)
 - Interactive UI with Tailwind CSS
 - RESTful API backend
 
@@ -16,6 +22,8 @@ A full-stack travel planning application built with Django REST Framework and Re
 - Django REST Framework
 - CORS Headers
 - SQLite Database
+- Anthropic Claude AI (for event suggestions)
+- python-dotenv (environment variables)
 
 **Frontend:**
 - React 18
@@ -96,6 +104,45 @@ python manage.py runserver
 ```
 
 **Terminal 2 - Frontend:**
+```bash
+cd travelplanner/frontend
+npm run dev
+```
+
+## AI-Powered Event Suggestions (Optional)
+
+The app includes **Claude AI integration** for intelligent travel suggestions!
+
+### Quick Setup:
+
+1. **Get Claude API Key** (free trial available):
+   - Visit: https://console.anthropic.com/settings/keys
+   - Create an account and generate an API key
+
+2. **Add to .env file**:
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-your-key-here" > .env
+```
+
+3. **Install dependencies**:
+```bash
+pip install anthropic python-dotenv
+```
+
+4. **Restart backend** and it works! 🎉
+
+### Alternative Options:
+
+- **Ollama** (100% free, local): See [LLM_INTEGRATION.md](LLM_INTEGRATION.md)
+- **Smart Fallback**: Works automatically without any API key
+
+**Interactive Setup**: Run `./setup_llm.sh` for guided setup
+
+For detailed instructions, see [LLM_INTEGRATION.md](LLM_INTEGRATION.md).
+
+---
+
+**Terminal 2 - Frontend (continued):**
 ```bash
 cd travelplanner/frontend
 npm run dev
