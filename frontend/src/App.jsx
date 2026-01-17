@@ -3,11 +3,13 @@ import axios from 'axios';
 import Navbar from './components/Navbar';
 import TripCard from './components/TripCard';
 import CreateTripModal from './components/CreateTripModal';
+import TripDetails from './components/TripDetails';
 
 function App() {
   const [trips, setTrips] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState(null);
 
   // 1. Fetch Trips from Django
   const fetchTrips = async () => {
@@ -82,6 +84,20 @@ function App() {
     }
   };
 
+  const handleTripClick = (trip) => {
+    setSelectedTrip(trip);
+  };
+
+  const handleBackToList = () => {
+    setSelectedTrip(null);
+    fetchTrips(); // Refresh trips when going back
+  };
+
+  // Show trip details if a trip is selected
+  if (selectedTrip) {
+    return <TripDetails trip={selectedTrip} onBack={handleBackToList} />;
+  }
+
   return (
     <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
       <Navbar onOpenModal={() => setIsModalOpen(true)} />
@@ -111,7 +127,7 @@ function App() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {upcoming.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
+                    <TripCard key={trip.id} trip={trip} onClick={() => handleTripClick(trip)} />
                   ))}
                 </div>
               </section>
@@ -126,7 +142,7 @@ function App() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {current.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
+                    <TripCard key={trip.id} trip={trip} onClick={() => handleTripClick(trip)} />
                   ))}
                 </div>
               </section>
@@ -141,7 +157,7 @@ function App() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {past.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
+                    <TripCard key={trip.id} trip={trip} onClick={() => handleTripClick(trip)} />
                   ))}
                 </div>
               </section>

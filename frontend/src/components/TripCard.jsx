@@ -1,6 +1,6 @@
 import { Calendar, MapPin, Wallet, Users } from 'lucide-react';
 
-export default function TripCard({ trip }) {
+export default function TripCard({ trip, onClick }) {
   // Calculate duration
   const start = new Date(trip.start_date);
   const end = new Date(trip.end_date);
@@ -10,7 +10,10 @@ export default function TripCard({ trip }) {
   const dateRange = `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   return (
-    <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-lg transition-all duration-300 cursor-pointer group">
+    <div 
+      onClick={onClick}
+      className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl hover:shadow-lg transition-all duration-300 cursor-pointer group"
+    >
       {/* Top Half: Gradient */}
       <div className="relative h-32 bg-gradient-to-r from-teal-800 to-teal-600 p-4 group-hover:from-teal-700 group-hover:to-teal-500 transition">
         <div className="absolute bottom-4 left-4 text-white">

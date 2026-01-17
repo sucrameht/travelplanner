@@ -41,3 +41,33 @@ class Stop(models.Model):
 
     class Meta:
         ordering = ['day', 'order'] # Sort by Day first, then by Order
+
+class Itinerary(models.Model):
+    trip = models.ForeignKey(Trip, related_name='itinerary', on_delete=models.CASCADE)
+    date = models.DateField()
+    location = models.CharField(max_length=200)
+    activity = models.CharField(max_length=200, blank=True, default='')
+    time = models.TimeField(null=True, blank=True)
+    duration = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text='Duration in hours')
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['date', 'time']
+        verbose_name_plural = 'Itineraries'
+
+    def __str__(self):
+        return f"{self.trip.name} - {self.date} - {self.location}"
+
+class Expense(models.Model):
+    trip = models.ForeignKey(Trip, related_name='expenses', on_delete=models.CASCADE)
+    description = models.CharField(max_length=200)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    category = models.CharField(max_length=50, default='Other')
+    date = models.DateField()
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.trip.name} - {self.description} - ${self.amount}"
