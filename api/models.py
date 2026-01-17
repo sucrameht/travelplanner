@@ -84,3 +84,16 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.trip.name} - {self.description} - {self.currency}{self.amount}"
+
+class Flight(models.Model):
+    trip = models.ForeignKey(Trip, related_name='flights', on_delete=models.CASCADE)
+    flight_number = models.CharField(max_length=20)
+    flight_date = models.DateField()
+    flight_data = models.JSONField(default=dict, blank=True)  # Store API response data
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['flight_date']
+    
+    def __str__(self):
+        return f"{self.trip.name} - {self.flight_number} on {self.flight_date}"

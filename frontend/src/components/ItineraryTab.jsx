@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, Route } from 'lucide-react';
+import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 import AddStopModal from './AddStopModal';
+import AddFlightModal from './AddFlightModal';
+import FlightCard from './FlightCard';
 
 export default function ItineraryTab({ trip }) {
   const [itinerary, setItinerary] = useState({});
+  const [flights, setFlights] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
+  const [isFlightSectionExpanded, setIsFlightSectionExpanded] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
 
   // Generate all days for the trip
@@ -53,9 +58,44 @@ export default function ItineraryTab({ trip }) {
     }
   };
 
+  // Fetch flights
+  const fetchFlights = async () => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/trips/${trip.id}/flights/`);
+      setFlights(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching flights:", error);
+      setFlights([]);
+    }
+  };
+
   useEffect(() => {
     fetchItinerary();
+    fetchFlights();
   }, [trip.id]);
+
+  const handleAddFlight = async (flightData) => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/flights/`, flightData);
+      setIsFlightModalOpen(false);
+      await fetchFlights();
+    } catch (error) {
+      console.error("Error adding flight:", error);
+      alert("Failed to add flight: " + (error.response?.data?.error || "Please check the flight number and try again"));
+    }
+  };
+
+  const handleDeleteFlight = async (flightId) => {
+    if (!confirm('Are you sure you want to delete this flight?')) return;
+    
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/flights/${flightId}/`);
+      await fetchFlights();
+    } catch (error) {
+      console.error("Error deleting flight:", error);
+      alert("Failed to delete flight");
+    }
+  };
 
   const handleAddStop = (dayInfo) => {
     setSelectedDay(dayInfo);
@@ -87,6 +127,64 @@ export default function ItineraryTab({ trip }) {
 
   return (
     <div className="space-y-6">
+      {/* Flight Information Section */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-6 cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => setIsFlightSectionExpanded(!isFlightSectionExpanded)}
+        >
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <Plane className="text-blue-600" size={20} />
+            Flight Information
+            {flights.length > 0 && (
+              <span className="text-sm font-normal text-gray-500">({flights.length} flight{flights.length !== 1 ? 's' : ''})</span>
+            )}
+          </h3>
+          <div className="flex items-center gap-2">
+            {isFlightSectionExpanded && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFlightModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                <Plus size={18} />
+                Add Flight
+              </button>
+            )}
+            {isFlightSectionExpanded ? (
+              <ChevronUp className="text-gray-600" size={24} />
+            ) : (
+              <ChevronDown className="text-gray-600" size={24} />
+            )}
+          </div>
+        </div>
+
+        {isFlightSectionExpanded && (
+          <div className="px-6 pb-6 border-t border-gray-200 pt-4">
+            {flights.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                <Plane className="mx-auto text-gray-300 mb-3" size={48} />
+                <p className="text-gray-400 mb-2">No flights added yet</p>
+                <p className="text-sm text-gray-400">Add your flight details to see boarding pass information</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {flights.map(flight => (
+                  <FlightCard 
+                    key={flight.id} 
+                    flight={flight}
+                    onDelete={handleDeleteFlight}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Days Itinerary */}
       {days.map((day) => {
         const stats = calculateDayStats(day.dateString);
         const stops = itinerary[day.dateString] || [];
@@ -173,6 +271,12 @@ export default function ItineraryTab({ trip }) {
         }}
         onSubmit={handleSubmitStop}
         day={selectedDay}
+      />
+
+      <AddFlightModal
+        isOpen={isFlightModalOpen}
+        onClose={() => setIsFlightModalOpen(false)}
+        onSubmit={handleAddFlight}
       />
     </div>
   );

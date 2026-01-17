@@ -59,6 +59,10 @@ export default function TripDetails({ trip: initialTrip, onBack }) {
     status = 'Past';
   }
 
+  // Calculate countdown
+  const daysUntilTrip = Math.ceil((startDate - today) / (1000 * 60 * 60 * 24));
+  const showCountdown = daysUntilTrip > 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with gradient background */}
@@ -71,6 +75,21 @@ export default function TripDetails({ trip: initialTrip, onBack }) {
             <ArrowLeft size={20} />
             Back
           </button>
+
+          {/* Countdown Banner */}
+          {showCountdown && (
+            <div className="mb-6 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">✨ Your adventure awaits ✨</h2>
+              <div className="inline-block bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4">
+                <div className="text-5xl md:text-6xl font-bold mb-1">
+                  {daysUntilTrip}
+                </div>
+                <div className="text-lg text-white/90">
+                  {daysUntilTrip === 1 ? 'day to go!' : 'days to go!'}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start justify-between">
             <div>
