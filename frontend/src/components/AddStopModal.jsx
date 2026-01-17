@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function AddStopModal({ isOpen, onClose, onSubmit, day }) {
+export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingStop }) {
   const [formData, setFormData] = useState({
     location: '',
     activity: '',
@@ -10,6 +10,29 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day }) {
     estimated_cost: '',
     notes: ''
   });
+
+  // Load editing stop data when modal opens
+  useEffect(() => {
+    if (editingStop) {
+      setFormData({
+        location: editingStop.location || '',
+        activity: editingStop.activity || '',
+        time: editingStop.time || '',
+        duration: editingStop.duration || '',
+        estimated_cost: editingStop.estimated_cost || '',
+        notes: editingStop.notes || ''
+      });
+    } else {
+      setFormData({
+        location: '',
+        activity: '',
+        time: '',
+        duration: '',
+        estimated_cost: '',
+        notes: ''
+      });
+    }
+  }, [editingStop, isOpen]);
 
   if (!isOpen) return null;
 
@@ -24,7 +47,7 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day }) {
       <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl p-6 relative animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-teal-950">
-            Add Stop - Day {day?.dayNumber}
+            {editingStop ? 'Edit Stop' : `Add Stop - Day ${day?.dayNumber}`}
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
             <X size={20} />
@@ -105,7 +128,7 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day }) {
             type="submit"
             className="w-full py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 shadow-lg mt-2"
           >
-            Add Stop
+            {editingStop ? 'Update Stop' : 'Add Stop'}
           </button>
         </form>
       </div>

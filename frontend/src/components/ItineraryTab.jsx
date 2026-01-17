@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2 } from 'lucide-react';
 import axios from 'axios';
 import AddStopModal from './AddStopModal';
 import SuggestedEvents from './SuggestedEvents';
@@ -13,6 +13,7 @@ export default function ItineraryTab({ trip }) {
   const [isFlightModalOpen, setIsFlightModalOpen] = useState(false);
   const [isFlightSectionExpanded, setIsFlightSectionExpanded] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [editingStop, setEditingStop] = useState(null);
   const [draggedEvent, setDraggedEvent] = useState(null);
   const [dragOverDay, setDragOverDay] = useState(null);
   const [draggedStop, setDraggedStop] = useState(null);
@@ -110,18 +111,31 @@ export default function ItineraryTab({ trip }) {
 
   const handleSubmitStop = async (stopData) => {
     try {
-      await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/itinerary/`, {
-        ...stopData,
-        date: selectedDay.dateString,
-        trip: trip.id
-      });
+      if (editingStop) {
+        // Update existing stop
+        await axios.patch(`http://127.0.0.1:8000/api/itinerary/${editingStop.id}/`, stopData);
+      } else {
+        // Create new stop
+        await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/itinerary/`, {
+          ...stopData,
+          date: selectedDay.dateString,
+          trip: trip.id
+        });
+      }
       setIsModalOpen(false);
       setSelectedDay(null);
+      setEditingStop(null);
       await fetchItinerary();
     } catch (error) {
-      console.error("Error adding stop:", error);
-      alert("Failed to add stop: " + (error.response?.data?.detail || "Please check the backend server"));
+      console.error("Error saving stop:", error);
+      alert("Failed to save stop: " + (error.response?.data?.detail || "Please check the backend server"));
     }
+  };
+
+  const handleEditStop = (stop, dayInfo) => {
+    setEditingStop(stop);
+    setSelectedDay(dayInfo);
+    setIsModalOpen(true);
   };
 
   const calculateDayStats = (dateString) => {
@@ -393,15 +407,15 @@ export default function ItineraryTab({ trip }) {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {stops.map((stop, index) => (
-                    <div 
-                      key={stop.id} 
+                    <div
+                      key={stop.id}
                       draggable
                       onDragStart={(e) => handleStopDragStart(e, stop, day.dateString)}
                       onDragOver={(e) => handleStopDragOver(e, stop.id)}
                       onDrop={(e) => handleStopDrop(e, stop, day.dateString)}
-                      className={`flex gap-4 p-4 rounded-lg transition cursor-move ${
+                      className={`group flex items-start gap-3 p-4 rounded-lg cursor-move transition-all ${
                         dragOverStop === stop.id 
                           ? 'bg-teal-100 border-2 border-teal-400' 
                           : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
@@ -420,6 +434,16 @@ export default function ItineraryTab({ trip }) {
                           {stop.estimated_cost > 0 && <span>💰 ${stop.estimated_cost}</span>}
                         </div>
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditStop(stop, day);
+                        }}
+                        className="flex-shrink-0 p-2 hover:bg-teal-100 rounded-lg transition opacity-0 group-hover:opacity-100"
+                        title="Edit stop"
+                      >
+                        <Edit2 size={18} className="text-teal-600" />
+                      </button>
                     </div>
                   ))}
                   <button
@@ -441,9 +465,11 @@ export default function ItineraryTab({ trip }) {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedDay(null);
+          setEditingStop(null);
         }}
         onSubmit={handleSubmitStop}
         day={selectedDay}
+        editingStop={editingStop}
       />
       </div>
 
