@@ -66,15 +66,16 @@ export default function CreateTripModal({ isOpen, onClose, onSubmit, initialData
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl p-6 relative animate-in fade-in zoom-in duration-200">
-        <div className="flex justify-between items-center mb-6">
+      <div className="w-full max-w-lg max-h-[90vh] bg-white shadow-2xl rounded-2xl flex flex-col relative animate-in fade-in zoom-in duration-200">
+        <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
           <h2 className="text-2xl font-bold text-teal-950">
             {initialData ? 'Edit Trip' : 'Plan a New Trip'}
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full cursor-pointer"><X size={20} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="overflow-y-auto px-6 py-4 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Trip Name</label>
             <input 
@@ -162,10 +163,13 @@ export default function CreateTripModal({ isOpen, onClose, onSubmit, initialData
               + Add Traveler
             </button>
           </div>
+          </div>
 
-          <button type="submit" className="cursor-pointer w-full py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 shadow-lg mt-2">
-            {initialData ? 'Update Trip' : 'Create Trip'}
-          </button>
+          <div className="p-6 pt-4 border-t border-gray-100">
+            <button type="submit" className="cursor-pointer w-full py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 shadow-lg">
+              {initialData ? 'Update Trip' : 'Create Trip'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
