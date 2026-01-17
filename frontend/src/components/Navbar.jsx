@@ -7,7 +7,7 @@ export default function Navbar({ onOpenModal }) {
         <div className="p-2 text-white rounded-full bg-teal-600">
           <Compass size={24} />
         </div>
-        Voyager
+        WanderSmart
       </div>
       <button 
         onClick={onOpenModal}

@@ -1,4 +1,4 @@
-# Travel Planner - Voyager
+# Travel Planner - WanderSmart
 
 A full-stack travel planning application built with Django REST Framework and React + Vite.
 

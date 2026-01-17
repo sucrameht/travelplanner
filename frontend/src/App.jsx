@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Search, Plane, Calendar, History } from 'lucide-react';
 import Navbar from './components/Navbar';
 import TripCard from './components/TripCard';
 import CreateTripModal from './components/CreateTripModal';
@@ -8,6 +9,9 @@ function App() {
   const [trips, setTrips] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('upcoming');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingTrip, setEditingTrip] = useState(null);
 
   // 1. Fetch Trips from Django
   const fetchTrips = async () => {
@@ -34,34 +38,51 @@ function App() {
     const current = [];
     const past = [];
 
-    console.log('Total trips:', trips.length);
-    console.log('Today:', today);
-
     trips.forEach(trip => {
       const startDate = new Date(trip.start_date);
       const endDate = new Date(trip.end_date);
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(0, 0, 0, 0);
 
-      console.log(`Trip: ${trip.name}, Start: ${startDate}, End: ${endDate}`);
-
       if (today < startDate) {
         upcoming.push(trip);
-        console.log('  -> Upcoming');
       } else if (today >= startDate && today <= endDate) {
         current.push(trip);
-        console.log('  -> Current');
       } else {
         past.push(trip);
-        console.log('  -> Past');
       }
     });
 
-    console.log('Categorized:', { upcoming: upcoming.length, current: current.length, past: past.length });
     return { upcoming, current, past };
   };
 
   const { upcoming, current, past } = categorizeTrips();
+
+  // Filter trips based on search query
+  const filterTrips = (tripList) => {
+    if (!searchQuery.trim()) return tripList;
+    
+    return tripList.filter(trip => 
+      trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trip.destination.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  // Get trips for active tab
+  const getActiveTrips = () => {
+    switch (activeTab) {
+      case 'current':
+        return filterTrips(current);
+      case 'upcoming':
+        return filterTrips(upcoming);
+      case 'past':
+        return filterTrips(past);
+      default:
+        return [];
+    }
+  };
+
+  const activeTrips = getActiveTrips();
 
   // 2. Create a Trip (Send to Django)
   const handleCreateTrip = async (tripData) => {
@@ -71,7 +92,7 @@ function App() {
 
       await axios.post('http://127.0.0.1:8000/api/trips/', {
         ...tripData,
-        travelers: [] // Default empty list
+        travelers: tripData.travelers || []
       });
       
       fetchTrips(); // Refresh the list immediately
@@ -82,78 +103,138 @@ function App() {
     }
   };
 
+  // Edit a Trip
+  const handleEditTrip = async (tripData) => {
+    try {
+      if (!tripData.name || !tripData.start_date) return;
+
+      await axios.put(`http://127.0.0.1:8000/api/trips/${editingTrip.id}/`, {
+        ...tripData,
+        travelers: tripData.travelers || []
+      });
+      
+      fetchTrips();
+      setEditingTrip(null);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error updating trip:", error);
+      alert("Failed to update trip.");
+    }
+  };
+
+  // Delete a Trip
+  const handleDeleteTrip = async (tripId) => {
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/trips/${tripId}/`);
+      fetchTrips();
+    } catch (error) {
+      console.error("Error deleting trip:", error);
+      alert("Failed to delete trip.");
+    }
+  };
+
+  // Open edit modal
+  const handleOpenEdit = (trip) => {
+    setEditingTrip(trip);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
       <Navbar onOpenModal={() => setIsModalOpen(true)} />
 
       <main className="max-w-6xl mx-auto px-8 py-8">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search trips by name or destination..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab('current')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition ${
+              activeTab === 'current'
+                ? 'bg-white text-teal-700 shadow-md'
+                : 'bg-transparent text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            <Plane size={18} />
+            Current
+            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100">{current.length}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('upcoming')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition ${
+              activeTab === 'upcoming'
+                ? 'bg-white text-teal-700 shadow-md'
+                : 'bg-transparent text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            <Calendar size={18} />
+            Upcoming
+            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100">{upcoming.length}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('past')}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition ${
+              activeTab === 'past'
+                ? 'bg-white text-teal-700 shadow-md'
+                : 'bg-transparent text-gray-600 hover:bg-white/50'
+            }`}
+          >
+            <History size={18} />
+            Past
+            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100">{past.length}</span>
+          </button>
+        </div>
+
         {/* Content Area */}
         {isLoading ? (
           <div className="text-center py-20 text-gray-500">Loading...</div>
-        ) : trips.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-            <p className="text-gray-400 mb-4">No trips found.</p>
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="text-teal-600 font-semibold hover:underline"
-            >
-              Create your first one!
-            </button>
+        ) : activeTrips.length === 0 ? (
+          <div className="text-center py-20">
+            <Plane className="mx-auto mb-4 text-gray-300" size={64} />
+            <p className="text-gray-500 text-lg font-medium mb-2">
+              {searchQuery ? 'No trips match your search' : `No ${activeTab} trips found`}
+            </p>
+            <p className="text-gray-400">
+              {!searchQuery && activeTab === 'upcoming' && 'Create a new trip to get started!'}
+            </p>
           </div>
         ) : (
-          <div className="space-y-12">
-            {/* Upcoming Trips */}
-            {upcoming.length > 0 && (
-              <section>
-                <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-teal-950">Your Trips</h2>
-                  <p className="text-gray-500 mt-2">Manage your upcoming adventures</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {upcoming.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Current Trips */}
-            {current.length > 0 && (
-              <section>
-                <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-teal-950">Current Trips</h2>
-                  <p className="text-gray-500 mt-2">Trips you're on right now</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {current.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Past Trips */}
-            {past.length > 0 && (
-              <section>
-                <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-teal-950">Past Trips</h2>
-                  <p className="text-gray-500 mt-2">Your travel memories</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {past.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
-                  ))}
-                </div>
-              </section>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeTrips.map((trip) => (
+              <TripCard 
+                key={trip.id} 
+                trip={trip} 
+                onEdit={handleOpenEdit}
+                onDelete={handleDeleteTrip}
+              />
+            ))}
           </div>
         )}
       </main>
 
       <CreateTripModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSubmit={handleCreateTrip}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTrip(null);
+        }} 
+        onSubmit={editingTrip ? handleEditTrip : handleCreateTrip}
+        initialData={editingTrip}
       />
     </div>
   );
