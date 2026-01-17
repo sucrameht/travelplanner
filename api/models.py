@@ -63,11 +63,24 @@ class Expense(models.Model):
     trip = models.ForeignKey(Trip, related_name='expenses', on_delete=models.CASCADE)
     description = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')  # Currency code (USD, EUR, SGD, etc.)
     category = models.CharField(max_length=50, default='Other')
     date = models.DateField()
+    paid_by = models.CharField(max_length=100, blank=True, default='')  # Who paid for this expense
+    split_between = models.JSONField(default=list)  # List of travelers splitting this expense
+    
+    # Split type: 'equal', 'percentage', or 'fixed'
+    split_type = models.CharField(max_length=20, default='equal')
+    
+    # Custom split details: {person: amount/percentage} for non-equal splits
+    split_details = models.JSONField(default=dict, blank=True)
+    
+    # Recurring expense fields
+    is_recurring = models.BooleanField(default=False)
+    recurrence_pattern = models.CharField(max_length=20, blank=True, default='')  # 'daily', 'weekly', 'monthly'
 
     class Meta:
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.trip.name} - {self.description} - ${self.amount}"
+        return f"{self.trip.name} - {self.description} - {self.currency}{self.amount}"
