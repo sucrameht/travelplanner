@@ -2,8 +2,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from .models import Trip, Stop, Itinerary, Expense, Flight, TravelMethod
-from .serializers import TripSerializer, StopSerializer, ItinerarySerializer, ExpenseSerializer, FlightSerializer, TravelMethodSerializer
+from .models import Trip, Stop, Itinerary, Expense, Flight, TravelMethod, MyActivity
+from .serializers import TripSerializer, StopSerializer, ItinerarySerializer, ExpenseSerializer, FlightSerializer, TravelMethodSerializer, MyActivitySerializer
 import requests
 import json
 import os
@@ -271,3 +271,8 @@ class FlightViewSet(viewsets.ModelViewSet):
 class TravelMethodViewSet(viewsets.ModelViewSet):
     queryset = TravelMethod.objects.all()
     serializer_class = TravelMethodSerializer
+
+class MyActivityViewSet(viewsets.ModelViewSet):
+    queryset = MyActivity.objects.all()
+    serializer_class = MyActivitySerializer
+

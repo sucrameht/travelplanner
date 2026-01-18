@@ -1,6 +1,6 @@
 # api/serializers.py
 from rest_framework import serializers
-from .models import Trip, Stop, Itinerary, Expense, Flight, TravelMethod
+from .models import Trip, Stop, Itinerary, Expense, Flight, TravelMethod, MyActivity
 
 class StopSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,6 +25,11 @@ class FlightSerializer(serializers.ModelSerializer):
 class TravelMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = TravelMethod
+        fields = '__all__'
+
+class MyActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MyActivity
         fields = '__all__'
 
 class TripSerializer(serializers.ModelSerializer):

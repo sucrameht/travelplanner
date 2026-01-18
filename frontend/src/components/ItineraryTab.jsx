@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2, ArrowRight } from 'lucide-react';
+import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2, ArrowRight, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import AddStopModal from './AddStopModal';
 import SuggestedEvents from './SuggestedEvents';
+import MyActivities from './MyActivities';
 import AddFlightModal from './AddFlightModal';
 import FlightCard from './FlightCard';
 import AddTravelMethodModal from './AddTravelMethodModal';
 import ViewTravelMethodModal from './ViewTravelMethodModal';
+import ViewStopModal from './ViewStopModal';
 
 export default function ItineraryTab({ trip }) {
   const [itinerary, setItinerary] = useState({});
@@ -26,6 +28,9 @@ export default function ItineraryTab({ trip }) {
   const [isViewTravelModalOpen, setIsViewTravelModalOpen] = useState(false);
   const [selectedFromStop, setSelectedFromStop] = useState(null);
   const [selectedToStop, setSelectedToStop] = useState(null);
+  const [activePanel, setActivePanel] = useState('suggested'); // 'my-activities' or 'suggested'
+  const [viewStop, setViewStop] = useState(null);
+  const [viewStopDay, setViewStopDay] = useState(null);
 
   // Generate all days for the trip
   const generateDays = () => {
@@ -329,7 +334,9 @@ export default function ItineraryTab({ trip }) {
         estimated_cost: draggedEvent.estimatedCost,
         date: dayInfo.dateString,
         trip: trip.id,
-        notes: `Category: ${draggedEvent.category}`
+        notes: `Category: ${draggedEvent.category}`,
+        photo_url: draggedEvent.photo_url || '',
+        links: draggedEvent.links || []
       });
       
       await fetchItinerary();
@@ -341,9 +348,9 @@ export default function ItineraryTab({ trip }) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main Itinerary - 2/3 width */}
-      <div className="lg:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Main Itinerary - Left (2/3 width = 8 columns) */}
+      <div className="space-y-6 lg:col-span-8">
         {/* Delete Zone */}
         {draggedStop && (
           <div
@@ -494,7 +501,11 @@ export default function ItineraryTab({ trip }) {
                         onDragStart={(e) => handleStopDragStart(e, stop, day.dateString)}
                         onDragOver={(e) => handleStopDragOver(e, stop.id)}
                         onDrop={(e) => handleStopDrop(e, stop, day.dateString)}
-                        className={`group flex items-start gap-3 p-4 rounded-lg cursor-move transition-all ${
+                        onClick={() => {
+                          setViewStop(stop);
+                          setViewStopDay(day);
+                        }}
+                        className={`group flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all ${
                           dragOverStop === stop.id 
                             ? 'bg-teal-100 border-2 border-teal-400' 
                             : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
@@ -507,6 +518,26 @@ export default function ItineraryTab({ trip }) {
                           <h4 className="font-semibold text-gray-900">{stop.location}</h4>
                           {stop.activity && <p className="text-sm text-gray-600 mt-1">{stop.activity}</p>}
                           {stop.notes && <p className="text-sm text-gray-500 mt-1 italic">{stop.notes}</p>}
+                          
+                          {/* Display Links */}
+                          {stop.links && stop.links.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {stop.links.map((link, linkIndex) => (
+                                <a
+                                  key={linkIndex}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 hover:underline mr-3"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink size={12} />
+                                  <span>{link.label}</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          
                           <div className="flex gap-4 mt-2 text-xs text-gray-500">
                             {stop.time && <span>⏰ {stop.time}</span>}
                             {stop.duration && <span>⏱️ {stop.duration}h</span>}
@@ -577,13 +608,37 @@ export default function ItineraryTab({ trip }) {
       />
       </div>
 
-      {/* Suggested Events Sidebar - 1/3 width */}
-      <div className="lg:col-span-1">
-        <SuggestedEvents 
-          destination={trip.destination} 
-          onDragStart={handleDragStart}
-        />
-      </div>
+      {/* My Activities Sidebar - Right (1/3 width = 4 columns) */}
+      {activePanel === 'my-activities' && (
+        <div className="lg:col-span-4">
+          <button
+            onClick={() => setActivePanel('suggested')}
+            className="mb-3 w-full py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <span>✨</span> Switch to Suggested Activities
+          </button>
+          <MyActivities 
+            tripId={trip.id}
+            onDragStart={handleDragStart}
+          />
+        </div>
+      )}
+
+      {/* Suggested Events Sidebar - Right (1/3 width = 4 columns) */}
+      {activePanel === 'suggested' && (
+        <div className="lg:col-span-4">
+          <button
+            onClick={() => setActivePanel('my-activities')}
+            className="mb-3 w-full py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <span>📝</span> Switch to My Activities
+          </button>
+          <SuggestedEvents 
+            destination={trip.destination} 
+            onDragStart={handleDragStart}
+          />
+        </div>
+      )}
 
       <AddFlightModal
         isOpen={isFlightModalOpen}
@@ -615,6 +670,15 @@ export default function ItineraryTab({ trip }) {
         fromStop={selectedFromStop}
         toStop={selectedToStop}
         travelMethods={selectedFromStop && selectedToStop ? getTravelMethodsForConnection(selectedFromStop.id, selectedToStop.id) : []}
+      />
+
+      <ViewStopModal
+        stop={viewStop}
+        dayInfo={viewStopDay}
+        onClose={() => {
+          setViewStop(null);
+          setViewStopDay(null);
+        }}
       />
     </div>
   );

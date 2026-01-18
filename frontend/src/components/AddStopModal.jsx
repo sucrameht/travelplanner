@@ -8,7 +8,8 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingSt
     time: '',
     duration: '',
     estimated_cost: '',
-    notes: ''
+    notes: '',
+    photo_url: ''
   });
 
   // Load editing stop data when modal opens
@@ -20,7 +21,8 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingSt
         time: editingStop.time || '',
         duration: editingStop.duration || '',
         estimated_cost: editingStop.estimated_cost || '',
-        notes: editingStop.notes || ''
+        notes: editingStop.notes || '',
+        photo_url: editingStop.photo_url || ''
       });
     } else {
       setFormData({
@@ -29,7 +31,8 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingSt
         time: '',
         duration: '',
         estimated_cost: '',
-        notes: ''
+        notes: '',
+        photo_url: ''
       });
     }
   }, [editingStop, isOpen]);
@@ -39,7 +42,7 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingSt
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ location: '', activity: '', time: '', duration: '', estimated_cost: '', notes: '' });
+    setFormData({ location: '', activity: '', time: '', duration: '', estimated_cost: '', notes: '', photo_url: '' });
   };
 
   return (
@@ -76,6 +79,18 @@ export default function AddStopModal({ isOpen, onClose, onSubmit, day, editingSt
               value={formData.activity}
               onChange={e => setFormData({...formData, activity: e.target.value})}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Photo URL</label>
+            <input
+              type="url"
+              className="w-full p-3 border rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
+              placeholder="https://example.com/photo.jpg"
+              value={formData.photo_url}
+              onChange={e => setFormData({...formData, photo_url: e.target.value})}
+            />
+            <p className="text-xs text-gray-500 mt-1">Optional: Add a photo URL from Unsplash, Google Images, etc.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
