@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Clock, DollarSign, GripVertical, ExternalLink, Edit, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import API_URL from '../config';
 import AddMyActivityModal from './AddMyActivityModal';
 
 export default function MyActivities({ tripId, onDragStart }) {
@@ -11,7 +12,7 @@ export default function MyActivities({ tripId, onDragStart }) {
 
   const fetchActivities = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/my-activities/`);
+      const response = await axios.get(`${API_URL}/api/my-activities/`);
       const tripActivities = response.data.filter(activity => activity.trip === tripId);
       setActivities(tripActivities);
       setIsLoading(false);
@@ -32,13 +33,13 @@ export default function MyActivities({ tripId, onDragStart }) {
     try {
       if (editingActivity) {
         // Update existing activity
-        await axios.put(`http://127.0.0.1:8000/api/my-activities/${editingActivity.id}/`, {
+        await axios.put(`${API_URL}/api/my-activities/${editingActivity.id}/`, {
           ...activityData,
           trip: tripId
         });
       } else {
         // Create new activity
-        await axios.post(`http://127.0.0.1:8000/api/my-activities/`, {
+        await axios.post(`${API_URL}/api/my-activities/`, {
           ...activityData,
           trip: tripId
         });
@@ -61,7 +62,7 @@ export default function MyActivities({ tripId, onDragStart }) {
     if (!confirm('Are you sure you want to delete this activity?')) return;
     
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/my-activities/${activityId}/`);
+      await axios.delete(`${API_URL}/api/my-activities/${activityId}/`);
       await fetchActivities();
     } catch (error) {
       console.error('Error deleting activity:', error);

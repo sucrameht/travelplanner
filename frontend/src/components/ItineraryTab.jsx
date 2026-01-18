@@ -91,7 +91,7 @@ export default function ItineraryTab({ trip }) {
 
   const fetchTravelMethods = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/travel-methods/`);
+      const response = await axios.get(`${API_URL}/api/travel-methods/`);
       const tripMethods = response.data.filter(tm => tm.trip === trip.id);
       setTravelMethods(tripMethods);
     } catch (error) {
@@ -185,12 +185,12 @@ export default function ItineraryTab({ trip }) {
         tm => tm.from_stop === selectedFromStop.id && tm.to_stop === selectedToStop.id
       );
       for (const tm of existing) {
-        await axios.delete(`http://127.0.0.1:8000/api/travel-methods/${tm.id}/`);
+        await axios.delete(`${API_URL}/api/travel-methods/${tm.id}/`);
       }
 
       for (let i = 0; i < methods.length; i++) {
         const method = methods[i];
-        await axios.post(`http://127.0.0.1:8000/api/travel-methods/`, {
+        await axios.post(`${API_URL}/api/travel-methods/`, {
           trip: trip.id,
           from_stop: selectedFromStop.id,
           to_stop: selectedToStop.id,
