@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2, ArrowRight, ExternalLink } from 'lucide-react';
 import axios from 'axios';
+import API_URL from '../config';
 import AddStopModal from './AddStopModal';
 import SuggestedEvents from './SuggestedEvents';
 import MyActivities from './MyActivities';
@@ -59,7 +60,7 @@ export default function ItineraryTab({ trip }) {
   // Fetch itinerary from backend
   const fetchItinerary = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/trips/${trip.id}/itinerary/`);
+      const response = await axios.get(`${API_URL}/api/trips/${trip.id}/itinerary/`);
       // Group by date
       const grouped = {};
       if (Array.isArray(response.data)) {
@@ -80,7 +81,7 @@ export default function ItineraryTab({ trip }) {
   // Fetch flights
   const fetchFlights = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/trips/${trip.id}/flights/`);
+      const response = await axios.get(`${API_URL}/api/trips/${trip.id}/flights/`);
       setFlights(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching flights:", error);
@@ -107,7 +108,7 @@ export default function ItineraryTab({ trip }) {
 
   const handleAddFlight = async (flightData) => {
     try {
-      await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/flights/`, flightData);
+      await axios.post(`${API_URL}/api/trips/${trip.id}/flights/`, flightData);
       setIsFlightModalOpen(false);
       await fetchFlights();
     } catch (error) {
@@ -120,7 +121,7 @@ export default function ItineraryTab({ trip }) {
     if (!confirm('Are you sure you want to delete this flight?')) return;
     
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/flights/${flightId}/`);
+      await axios.delete(`${API_URL}/api/flights/${flightId}/`);
       await fetchFlights();
     } catch (error) {
       console.error("Error deleting flight:", error);
@@ -137,10 +138,10 @@ export default function ItineraryTab({ trip }) {
     try {
       if (editingStop) {
         // Update existing stop
-        await axios.patch(`http://127.0.0.1:8000/api/itinerary/${editingStop.id}/`, stopData);
+        await axios.patch(`${API_URL}/api/itinerary/${editingStop.id}/`, stopData);
       } else {
         // Create new stop
-        await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/itinerary/`, {
+        await axios.post(`${API_URL}/api/trips/${trip.id}/itinerary/`, {
           ...stopData,
           date: selectedDay.dateString,
           trip: trip.id
@@ -260,7 +261,7 @@ export default function ItineraryTab({ trip }) {
       const targetIndex = stops.findIndex(s => s.id === targetStop.id);
       
       // Update the dragged stop's date
-      await axios.patch(`http://127.0.0.1:8000/api/itinerary/${draggedStop.stop.id}/`, {
+      await axios.patch(`${API_URL}/api/itinerary/${draggedStop.stop.id}/`, {
         date: targetDay
       });
       
@@ -297,7 +298,7 @@ export default function ItineraryTab({ trip }) {
     if (!draggedStop) return;
     
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/itinerary/${draggedStop.stop.id}/`);
+      await axios.delete(`${API_URL}/api/itinerary/${draggedStop.stop.id}/`);
       await fetchItinerary();
       setDraggedStop(null);
     } catch (error) {
@@ -312,7 +313,7 @@ export default function ItineraryTab({ trip }) {
     // Handle moving existing stop to new day
     if (draggedStop) {
       try {
-        await axios.patch(`http://127.0.0.1:8000/api/itinerary/${draggedStop.stop.id}/`, {
+        await axios.patch(`${API_URL}/api/itinerary/${draggedStop.stop.id}/`, {
           date: dayInfo.dateString
         });
         await fetchItinerary();
@@ -327,7 +328,7 @@ export default function ItineraryTab({ trip }) {
 
     try {
       // Add the dragged event as a stop
-      await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/itinerary/`, {
+      await axios.post(`${API_URL}/api/trips/${trip.id}/itinerary/`, {
         location: draggedEvent.name,
         activity: draggedEvent.description,
         duration: draggedEvent.duration,

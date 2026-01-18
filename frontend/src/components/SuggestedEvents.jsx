@@ -1,6 +1,7 @@
 import { MapPin, Clock, DollarSign, Sparkles, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config';
 
 // Fallback events if API fails
 const getFallbackEvents = (destination) => {
@@ -70,7 +71,7 @@ export default function SuggestedEvents({ destination, onDragStart }) {
     
     try {
       // Call backend endpoint that uses LLM to generate events
-      const response = await axios.post('http://127.0.0.1:8000/api/generate-events/', {
+      const response = await axios.post(`${API_URL}/api/generate-events/`, {
         destination: destination,
         regenerate: forceRegenerate  // Force new generation on refresh
       });
