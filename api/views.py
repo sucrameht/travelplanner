@@ -2,8 +2,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from .models import Trip, Stop, Itinerary, Expense, Flight
-from .serializers import TripSerializer, StopSerializer, ItinerarySerializer, ExpenseSerializer, FlightSerializer
+from .models import Trip, Stop, Itinerary, Expense, Flight, TravelMethod, MyActivity
+from .serializers import TripSerializer, StopSerializer, ItinerarySerializer, ExpenseSerializer, FlightSerializer, TravelMethodSerializer, MyActivitySerializer
 import requests
 import json
 import os
@@ -252,6 +252,13 @@ class StopViewSet(viewsets.ModelViewSet):
 class ItineraryViewSet(viewsets.ModelViewSet):
     queryset = Itinerary.objects.all()
     serializer_class = ItinerarySerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Delete associated travel methods before deleting itinerary
+        TravelMethod.objects.filter(from_stop=instance).delete()
+        TravelMethod.objects.filter(to_stop=instance).delete()
+        return super().destroy(request, *args, **kwargs)
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.all()
@@ -260,3 +267,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 class FlightViewSet(viewsets.ModelViewSet):
     queryset = Flight.objects.all()
     serializer_class = FlightSerializer
+
+class TravelMethodViewSet(viewsets.ModelViewSet):
+    queryset = TravelMethod.objects.all()
+    serializer_class = TravelMethodSerializer
+
+class MyActivityViewSet(viewsets.ModelViewSet):
+    queryset = MyActivity.objects.all()
+    serializer_class = MyActivitySerializer
+

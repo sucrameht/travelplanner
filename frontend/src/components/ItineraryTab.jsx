@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2 } from 'lucide-react';
+import { Calendar, Plus, Route, Plane, ChevronDown, ChevronUp, Trash2, Edit2, ArrowRight, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import API_URL from '../config';
 import AddStopModal from './AddStopModal';
 import SuggestedEvents from './SuggestedEvents';
+import MyActivities from './MyActivities';
 import AddFlightModal from './AddFlightModal';
 import FlightCard from './FlightCard';
+import AddTravelMethodModal from './AddTravelMethodModal';
+import ViewTravelMethodModal from './ViewTravelMethodModal';
+import ViewStopModal from './ViewStopModal';
 
 export default function ItineraryTab({ trip }) {
   const [itinerary, setItinerary] = useState({});
@@ -20,6 +24,14 @@ export default function ItineraryTab({ trip }) {
   const [draggedStop, setDraggedStop] = useState(null);
   const [dragOverStop, setDragOverStop] = useState(null);
   const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  const [travelMethods, setTravelMethods] = useState([]);
+  const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
+  const [isViewTravelModalOpen, setIsViewTravelModalOpen] = useState(false);
+  const [selectedFromStop, setSelectedFromStop] = useState(null);
+  const [selectedToStop, setSelectedToStop] = useState(null);
+  const [activePanel, setActivePanel] = useState('suggested'); // 'my-activities' or 'suggested'
+  const [viewStop, setViewStop] = useState(null);
+  const [viewStopDay, setViewStopDay] = useState(null);
 
   // Generate all days for the trip
   const generateDays = () => {
@@ -77,9 +89,21 @@ export default function ItineraryTab({ trip }) {
     }
   };
 
+  const fetchTravelMethods = async () => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/api/travel-methods/`);
+      const tripMethods = response.data.filter(tm => tm.trip === trip.id);
+      setTravelMethods(tripMethods);
+    } catch (error) {
+      console.error("Error fetching travel methods:", error);
+      setTravelMethods([]);
+    }
+  };
+
   useEffect(() => {
     fetchItinerary();
     fetchFlights();
+    fetchTravelMethods();
   }, [trip.id]);
 
   const handleAddFlight = async (flightData) => {
@@ -137,6 +161,65 @@ export default function ItineraryTab({ trip }) {
     setEditingStop(stop);
     setSelectedDay(dayInfo);
     setIsModalOpen(true);
+  };
+
+  const handleAddTravelMethod = (fromStop, toStop) => {
+    setSelectedFromStop(fromStop);
+    setSelectedToStop(toStop);
+    const existingMethods = getTravelMethodsForConnection(fromStop.id, toStop.id);
+    if (existingMethods.length > 0) {
+      setIsViewTravelModalOpen(true);
+    } else {
+      setIsTravelModalOpen(true);
+    }
+  };
+
+  const handleEditTravelMethod = () => {
+    setIsViewTravelModalOpen(false);
+    setIsTravelModalOpen(true);
+  };
+
+  const handleSubmitTravelMethod = async (methods) => {
+    try {
+      const existing = travelMethods.filter(
+        tm => tm.from_stop === selectedFromStop.id && tm.to_stop === selectedToStop.id
+      );
+      for (const tm of existing) {
+        await axios.delete(`http://127.0.0.1:8000/api/travel-methods/${tm.id}/`);
+      }
+
+      for (let i = 0; i < methods.length; i++) {
+        const method = methods[i];
+        await axios.post(`http://127.0.0.1:8000/api/travel-methods/`, {
+          trip: trip.id,
+          from_stop: selectedFromStop.id,
+          to_stop: selectedToStop.id,
+          mode: method.mode,
+          distance: parseFloat(method.distance),
+          duration: parseFloat(method.duration),
+          estimated_cost: parseFloat(method.estimatedCost || 0),
+          line_number: method.lineNumber || '',
+          boarding_stop: method.boardingStop || '',
+          alighting_stop: method.alightingStop || '',
+          number_of_stops: parseInt(method.numberOfStops || 0),
+          order: i
+        });
+      }
+
+      setIsTravelModalOpen(false);
+      setSelectedFromStop(null);
+      setSelectedToStop(null);
+      await fetchTravelMethods();
+    } catch (error) {
+      console.error("Error saving travel method:", error);
+      alert("Failed to save travel method");
+    }
+  };
+
+  const getTravelMethodsForConnection = (fromStopId, toStopId) => {
+    return travelMethods
+      .filter(tm => tm.from_stop === fromStopId && tm.to_stop === toStopId)
+      .sort((a, b) => a.order - b.order);
   };
 
   const calculateDayStats = (dateString) => {
@@ -252,7 +335,9 @@ export default function ItineraryTab({ trip }) {
         estimated_cost: draggedEvent.estimatedCost,
         date: dayInfo.dateString,
         trip: trip.id,
-        notes: `Category: ${draggedEvent.category}`
+        notes: `Category: ${draggedEvent.category}`,
+        photo_url: draggedEvent.photo_url || '',
+        links: draggedEvent.links || []
       });
       
       await fetchItinerary();
@@ -264,9 +349,9 @@ export default function ItineraryTab({ trip }) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main Itinerary - 2/3 width */}
-      <div className="lg:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Main Itinerary - Left (2/3 width = 8 columns) */}
+      <div className="space-y-6 lg:col-span-8">
         {/* Delete Zone */}
         {draggedStop && (
           <div
@@ -410,41 +495,91 @@ export default function ItineraryTab({ trip }) {
               ) : (
                 <div className="space-y-3">
                   {stops.map((stop, index) => (
-                    <div
-                      key={stop.id}
-                      draggable
-                      onDragStart={(e) => handleStopDragStart(e, stop, day.dateString)}
-                      onDragOver={(e) => handleStopDragOver(e, stop.id)}
-                      onDrop={(e) => handleStopDrop(e, stop, day.dateString)}
-                      className={`group flex items-start gap-3 p-4 rounded-lg cursor-move transition-all ${
-                        dragOverStop === stop.id 
-                          ? 'bg-teal-100 border-2 border-teal-400' 
-                          : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
-                      }`}
-                    >
-                      <div className="flex-shrink-0 w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{stop.location}</h4>
-                        {stop.activity && <p className="text-sm text-gray-600 mt-1">{stop.activity}</p>}
-                        {stop.notes && <p className="text-sm text-gray-500 mt-1 italic">{stop.notes}</p>}
-                        <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                          {stop.time && <span>⏰ {stop.time}</span>}
-                          {stop.duration && <span>⏱️ {stop.duration}h</span>}
-                          {stop.estimated_cost > 0 && <span>💰 ${stop.estimated_cost}</span>}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditStop(stop, day);
+                    <div key={stop.id}>
+                      {/* Stop Card */}
+                      <div 
+                        draggable
+                        onDragStart={(e) => handleStopDragStart(e, stop, day.dateString)}
+                        onDragOver={(e) => handleStopDragOver(e, stop.id)}
+                        onDrop={(e) => handleStopDrop(e, stop, day.dateString)}
+                        onClick={() => {
+                          setViewStop(stop);
+                          setViewStopDay(day);
                         }}
-                        className="flex-shrink-0 p-2 hover:bg-teal-100 rounded-lg transition opacity-0 group-hover:opacity-100"
-                        title="Edit stop"
+                        className={`group flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all ${
+                          dragOverStop === stop.id 
+                            ? 'bg-teal-100 border-2 border-teal-400' 
+                            : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                        }`}
                       >
-                        <Edit2 size={18} className="text-teal-600" />
-                      </button>
+                        <div className="flex-shrink-0 w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{stop.location}</h4>
+                          {stop.activity && <p className="text-sm text-gray-600 mt-1">{stop.activity}</p>}
+                          {stop.notes && <p className="text-sm text-gray-500 mt-1 italic">{stop.notes}</p>}
+                          
+                          {/* Display Links */}
+                          {stop.links && stop.links.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {stop.links.map((link, linkIndex) => (
+                                <a
+                                  key={linkIndex}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-800 hover:underline mr-3"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink size={12} />
+                                  <span>{link.label}</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                            {stop.time && <span>⏰ {stop.time}</span>}
+                            {stop.duration && <span>⏱️ {stop.duration}h</span>}
+                            {stop.estimated_cost > 0 && <span>💰 ${stop.estimated_cost}</span>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditStop(stop, day);
+                          }}
+                          className="flex-shrink-0 p-2 hover:bg-teal-100 rounded-lg transition opacity-0 group-hover:opacity-100"
+                          title="Edit stop"
+                        >
+                          <Edit2 size={18} className="text-teal-600" />
+                        </button>
+                      </div>
+
+                      {/* Travel Method Button */}
+                      {index < stops.length - 1 && (
+                        <div className="relative h-12 flex items-center justify-center">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t-2 border-dashed border-gray-300"></div>
+                          </div>
+                          <button
+                            onClick={() => handleAddTravelMethod(stop, stops[index + 1])}
+                            className="relative px-3 py-1.5 bg-white border-2 border-gray-300 rounded-full text-xs font-medium text-gray-600 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition flex items-center gap-1.5 shadow-sm"
+                          >
+                            <ArrowRight size={14} />
+                            {(() => {
+                              const methods = getTravelMethodsForConnection(stop.id, stops[index + 1].id);
+                              if (methods.length > 0) {
+                                const totalDuration = methods.reduce((sum, m) => sum + parseFloat(m.duration), 0);
+                                const transferCount = methods.length - 1;
+                                return `${totalDuration} min • ${transferCount > 0 ? `${transferCount} transfer${transferCount !== 1 ? 's' : ''}` : methods[0].mode}`;
+                              }
+                              return 'Add Travel';
+                            })()}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <button
@@ -474,18 +609,77 @@ export default function ItineraryTab({ trip }) {
       />
       </div>
 
-      {/* Suggested Events Sidebar - 1/3 width */}
-      <div className="lg:col-span-1">
-        <SuggestedEvents 
-          destination={trip.destination} 
-          onDragStart={handleDragStart}
-        />
-      </div>
+      {/* My Activities Sidebar - Right (1/3 width = 4 columns) */}
+      {activePanel === 'my-activities' && (
+        <div className="lg:col-span-4">
+          <button
+            onClick={() => setActivePanel('suggested')}
+            className="mb-3 w-full py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <span>✨</span> Switch to Suggested Activities
+          </button>
+          <MyActivities 
+            tripId={trip.id}
+            onDragStart={handleDragStart}
+          />
+        </div>
+      )}
+
+      {/* Suggested Events Sidebar - Right (1/3 width = 4 columns) */}
+      {activePanel === 'suggested' && (
+        <div className="lg:col-span-4">
+          <button
+            onClick={() => setActivePanel('my-activities')}
+            className="mb-3 w-full py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <span>📝</span> Switch to My Activities
+          </button>
+          <SuggestedEvents 
+            destination={trip.destination} 
+            onDragStart={handleDragStart}
+          />
+        </div>
+      )}
 
       <AddFlightModal
         isOpen={isFlightModalOpen}
         onClose={() => setIsFlightModalOpen(false)}
         onSubmit={handleAddFlight}
+      />
+
+      <AddTravelMethodModal
+        isOpen={isTravelModalOpen}
+        onClose={() => {
+          setIsTravelModalOpen(false);
+          setSelectedFromStop(null);
+          setSelectedToStop(null);
+        }}
+        onSubmit={handleSubmitTravelMethod}
+        fromStop={selectedFromStop}
+        toStop={selectedToStop}
+        existingMethods={selectedFromStop && selectedToStop ? getTravelMethodsForConnection(selectedFromStop.id, selectedToStop.id) : null}
+      />
+
+      <ViewTravelMethodModal
+        isOpen={isViewTravelModalOpen}
+        onClose={() => {
+          setIsViewTravelModalOpen(false);
+          setSelectedFromStop(null);
+          setSelectedToStop(null);
+        }}
+        onEdit={handleEditTravelMethod}
+        fromStop={selectedFromStop}
+        toStop={selectedToStop}
+        travelMethods={selectedFromStop && selectedToStop ? getTravelMethodsForConnection(selectedFromStop.id, selectedToStop.id) : []}
+      />
+
+      <ViewStopModal
+        stop={viewStop}
+        dayInfo={viewStopDay}
+        onClose={() => {
+          setViewStop(null);
+          setViewStopDay(null);
+        }}
       />
     </div>
   );
