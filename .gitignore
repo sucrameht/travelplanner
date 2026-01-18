@@ -71,3 +71,4 @@ htmlcov/
 
 # Misc
 *.orig
+.vercel/
