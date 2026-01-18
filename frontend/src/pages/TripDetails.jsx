@@ -2,6 +2,7 @@ import { ArrowLeft, MapPin, Calendar, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../config';
 import ItineraryTab from '../components/ItineraryTab';
 import ExpensesTab from '../components/ExpensesTab';
 
@@ -18,7 +19,7 @@ export default function TripDetails() {
     const fetchTripDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://127.0.0.1:8000/api/trips/${tripId}/`);
+        const response = await axios.get(`${API_URL}/api/trips/${tripId}/`);
         setTrip(response.data);
         setError(null);
       } catch (err) {

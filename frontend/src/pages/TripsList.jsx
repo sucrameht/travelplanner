@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Search, Plane, Calendar, History } from 'lucide-react';
+import API_URL from '../config';
 import Navbar from '../components/Navbar';
 import TripCard from '../components/TripCard';
 import CreateTripModal from '../components/CreateTripModal';
@@ -18,7 +19,7 @@ export default function TripsList() {
   // 1. Fetch Trips from Django
   const fetchTrips = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/trips/');
+      const response = await axios.get(`${API_URL}/api/trips/`);
       setTrips(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -92,7 +93,7 @@ export default function TripsList() {
       // Basic validation
       if (!tripData.name || !tripData.start_date) return;
 
-      await axios.post('http://127.0.0.1:8000/api/trips/', {
+      await axios.post(`${API_URL}/api/trips/`, {
         ...tripData,
         travelers: tripData.travelers || []
       });
@@ -110,7 +111,7 @@ export default function TripsList() {
     try {
       if (!tripData.name || !tripData.start_date) return;
 
-      await axios.put(`http://127.0.0.1:8000/api/trips/${editingTrip.id}/`, {
+      await axios.put(`${API_URL}/api/trips/${editingTrip.id}/`, {
         ...tripData,
         travelers: tripData.travelers || []
       });
@@ -127,7 +128,7 @@ export default function TripsList() {
   // Delete a Trip
   const handleDeleteTrip = async (tripId) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/trips/${tripId}/`);
+      await axios.delete(`${API_URL}/api/trips/${tripId}/`);
       fetchTrips();
     } catch (error) {
       console.error("Error deleting trip:", error);

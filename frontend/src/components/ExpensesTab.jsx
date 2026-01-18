@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Wallet, Plus, Trash2, Edit2 } from 'lucide-react';
 import axios from 'axios';
+import API_URL from '../config';
 import AddExpenseModal from './AddExpenseModal';
 
 export default function ExpensesTab({ trip }) {
@@ -11,7 +12,7 @@ export default function ExpensesTab({ trip }) {
   // Fetch expenses from backend
   const fetchExpenses = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/trips/${trip.id}/expenses/`);
+      const response = await axios.get(`${API_URL}/api/trips/${trip.id}/expenses/`);
       setExpenses(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching expenses:", error);
@@ -27,13 +28,13 @@ export default function ExpensesTab({ trip }) {
     try {
       if (expenseData.id) {
         // Update existing expense
-        await axios.put(`http://127.0.0.1:8000/api/expenses/${expenseData.id}/`, {
+        await axios.put(`${API_URL}/api/expenses/${expenseData.id}/`, {
           ...expenseData,
           trip: trip.id
         });
       } else {
         // Create new expense
-        await axios.post(`http://127.0.0.1:8000/api/trips/${trip.id}/expenses/`, {
+        await axios.post(`${API_URL}/api/trips/${trip.id}/expenses/`, {
           ...expenseData,
           trip: trip.id
         });
@@ -61,7 +62,7 @@ export default function ExpensesTab({ trip }) {
     if (!confirm('Are you sure you want to delete this expense?')) return;
     
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/expenses/${expenseId}/`);
+      await axios.delete(`${API_URL}/api/expenses/${expenseId}/`);
       await fetchExpenses();
     } catch (error) {
       console.error("Error deleting expense:", error);
