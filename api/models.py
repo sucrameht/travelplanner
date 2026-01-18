@@ -110,3 +110,37 @@ class SuggestedEvent(models.Model):
     
     def __str__(self):
         return f"Suggestions for {self.destination}"
+
+class TravelMethod(models.Model):
+    """Travel methods between consecutive stops in itinerary"""
+    MODE_CHOICES = [
+        ('WALK', 'Walk'),
+        ('BUS', 'Bus'),
+        ('TRAIN', 'Train'),
+        ('CYCLE', 'Cycle'),
+        ('DRIVE', 'Drive'),
+        ('PRIVATE_HIRE', 'Private Hire'),
+    ]
+    
+    trip = models.ForeignKey(Trip, related_name='travel_methods', on_delete=models.CASCADE)
+    from_stop = models.ForeignKey(Itinerary, related_name='travel_from', on_delete=models.CASCADE)
+    to_stop = models.ForeignKey(Itinerary, related_name='travel_to', on_delete=models.CASCADE)
+    mode = models.CharField(max_length=20, choices=MODE_CHOICES)
+    distance = models.DecimalField(max_digits=10, decimal_places=2, help_text='Distance in km')
+    duration = models.DecimalField(max_digits=10, decimal_places=2, help_text='Duration in minutes')
+    estimated_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Estimated cost')
+    
+    # Transit-specific fields (for bus/train)
+    line_number = models.CharField(max_length=50, blank=True, default='')
+    boarding_stop = models.CharField(max_length=200, blank=True, default='')
+    alighting_stop = models.CharField(max_length=200, blank=True, default='')
+    number_of_stops = models.IntegerField(default=0, help_text='Number of stops for bus/train')
+    
+    # Order for multiple travel methods between same stops (for transfers)
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['from_stop', 'order']
+    
+    def __str__(self):
+        return f"{self.trip.name} - {self.mode} from {self.from_stop.location} to {self.to_stop.location}"
